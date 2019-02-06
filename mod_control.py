@@ -118,7 +118,7 @@ def get_prices(paths, pair, side):
             ask = list(data[pair]['asks'].keys())[0]
             prices.append(ask)
         else:
-            raise Exception('Side must be either "asks" or "bids".')
+            raise Exception(' must be either "asks" or "bids".')
 
     return prices
 
@@ -126,20 +126,17 @@ def get_prices(paths, pair, side):
 def main():
     (start_date, end_date, interval, period) = (1548949201435, 1549016566397, 60000, 20)
     paths, dates = get_rolling_window(start_date, end_date, interval, period)
-    prices = get_prices(paths, 'XRPBTC', 'bids')
+    prices_str = get_prices(paths, 'XRPBTC', 'bids')
 
-    int_prices = [float(i) for i in prices]
-    date_human = [ts_to_date(d/1000) for d in dates]
+    prices = [float(i) for i in prices_str]
+    dates_human = [ts_to_date(d/1000) for d in dates]
 
-    plt.plot(date_human, int_prices)
+    plt.plot(dates_human, prices)
     plt.show()
 
-    test = []
-    for i, d in enumerate(dates):
-        test.append((ts_to_date(d/1000), int_prices[i]))
-    print(test)
-
-
+    # Print prices and dates
+    for i, d in enumerate(dates_human):
+        print(f'{d}  {prices[i]:.8f}')
 
 
 if __name__ == '__main__':
