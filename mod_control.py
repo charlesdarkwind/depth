@@ -2,16 +2,11 @@ import glob
 import os
 import gzip
 import json
+import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.dates
 from datetime import datetime
-import pprint
-
 depth_dir = 'W:/depths-old/*'
-ROLLING_WINDOW = 50
-# 1548941020817
-
-def ts_to_date(ts):
-    return datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 
 
 def get_data(path):
@@ -19,9 +14,6 @@ def get_data(path):
     raw = file.read()
     data = json.loads(raw.decode('utf-8'))
     file.close()
-
-    # if get_timestamp_from_path(path) == 1548941020817:
-    #     pprint.pprint(data)
     return data
 
 
@@ -101,7 +93,7 @@ def get_rolling_window(start_date, end_date, interval, period):
 
 
 def get_prices(paths, pair, side):
-    """Get prices list from files path
+    """Check inside files from a list of paths and retrieve the prices for a pair.
 
     :param paths: Strings of paths
     :type paths: list
@@ -122,25 +114,42 @@ def get_prices(paths, pair, side):
             ask = sorted(list(data[pair]['asks'].keys()))[0]
             prices.append(ask)
         else:
-            raise Exception(' must be either "asks" or "bids".')
+            raise Exception('Side must be either "asks" or "bids".')
 
     return prices
 
 
-def main():
-    (start_date, end_date, interval, period) = (1548949201435, 1549016566397, 60000, 20)
-    paths, dates = get_rolling_window(start_date, end_date, interval, period)
-    prices_str = get_prices(paths, 'XRPBTC', 'bids')
-
-    prices = [float(i) for i in prices_str]
-    dates_human = [ts_to_date(d/1000) for d in dates]
-
-    plt.plot(dates_human, prices)
+def show_plot(pair, dates, prices):
+    xs = matplotlib.dates.date2num(dates)
+    hfmt = matplotlib.dates.DateFormatter('%m/%d %H:%M')
+    fig = plt.figure()
+    fig.suptitle(pair, fontsize=14)
+    ax = fig.add_subplot(1, 1, 1)
+    ax.xaxis.set_major_formatter(hfmt)
+    plt.setp(ax.get_xticklabels(), rotation=15)
+    ax.plot(xs, prices)
     plt.show()
 
+
+def main():
+    start_date = 1548949201435
+    end_date = 1549016566397
+    interval = 60000
+    period = 20
+    pair = 'XRPBTC'
+
+    paths, dates = get_rolling_window(start_date, end_date, interval, period)
+
+    date_objs = [datetime.fromtimestamp(d/1000.0) for d in dates]
+
+    prices_str = get_prices(paths, pair, 'bids')
+    prices = [float(i) for i in prices_str]
+
+    show_plot(pair, date_objs, prices)
+
     # Print prices and dates
-    for i, d in enumerate(dates_human):
-        print(f'{dates[i]}  -  {d}  -  {prices[i]:.8f}')
+    for i, d in enumerate(date_objs):
+        print(f'{d}  -  {prices[i]:.8f}')
 
 
 if __name__ == '__main__':
