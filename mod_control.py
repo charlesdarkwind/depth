@@ -4,10 +4,11 @@ import gzip
 import json
 import matplotlib.pyplot as plt
 from datetime import datetime
+import pprint
 
 depth_dir = 'W:/depths-old/*'
 ROLLING_WINDOW = 50
-
+# 1548941020817
 
 def ts_to_date(ts):
     return datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
@@ -18,6 +19,9 @@ def get_data(path):
     raw = file.read()
     data = json.loads(raw.decode('utf-8'))
     file.close()
+
+    # if get_timestamp_from_path(path) == 1548941020817:
+    #     pprint.pprint(data)
     return data
 
 
@@ -111,11 +115,11 @@ def get_prices(paths, pair, side):
     for path in paths:
         data = get_data(path)
 
-        if side == 'bids':
-            bid = list(data[pair]['bids'].keys())[-1]
+        if side == 'bids':  # Best bid
+            bid = sorted(list(data[pair]['bids'].keys()))[-1]
             prices.append(bid)
-        elif side == 'asks':
-            ask = list(data[pair]['asks'].keys())[0]
+        elif side == 'asks':  # Best ask
+            ask = sorted(list(data[pair]['asks'].keys()))[0]
             prices.append(ask)
         else:
             raise Exception(' must be either "asks" or "bids".')
@@ -136,7 +140,7 @@ def main():
 
     # Print prices and dates
     for i, d in enumerate(dates_human):
-        print(f'{d}  {prices[i]:.8f}')
+        print(f'{dates[i]}  -  {d}  -  {prices[i]:.8f}')
 
 
 if __name__ == '__main__':
