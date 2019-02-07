@@ -1,3 +1,5 @@
+import _ta_lib as talib
+import numpy
 import glob
 import os
 import gzip
@@ -6,7 +8,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates
 from datetime import datetime
-depth_dir = 'W:/depths-old/*'
+depth_dir = 'F:/depths-old/*'
 
 
 def get_data(path):
@@ -119,7 +121,7 @@ def get_prices(paths, pair, side):
     return prices
 
 
-def show_plot(pair, dates, prices):
+def show_plot(pair, dates, prices, avg):
     xs = matplotlib.dates.date2num(dates)
     hfmt = matplotlib.dates.DateFormatter('%m/%d %H:%M')
     fig = plt.figure()
@@ -128,7 +130,22 @@ def show_plot(pair, dates, prices):
     ax.xaxis.set_major_formatter(hfmt)
     plt.setp(ax.get_xticklabels(), rotation=15)
     ax.plot(xs, prices)
+
+    ax2 = fig.add_subplot(1, 1, 1)
+    ax2.xaxis.set_major_formatter(hfmt)
+    ax2.plot(xs, avg)
+
     plt.show()
+
+
+def get_moving_average(prices):
+    arr = numpy.array(prices)
+    output = talib.SMA(arr, timeperiod=35)
+    return list(output)
+
+# def save_to_file(prices):
+#     outfile = open('prices.json', 'w')
+#     json.dump()
 
 
 def main():
@@ -145,7 +162,10 @@ def main():
     prices_str = get_prices(paths, pair, 'bids')
     prices = [float(i) for i in prices_str]
 
-    show_plot(pair, date_objs, prices)
+    avg = get_moving_average(prices)
+
+    show_plot(pair, date_objs, prices, avg)
+
 
     # Print prices and dates
     for i, d in enumerate(date_objs):
