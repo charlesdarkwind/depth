@@ -1,4 +1,4 @@
-import _ta_lib as talib
+import talib
 import numpy
 import glob
 import os
@@ -8,7 +8,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates
 from datetime import datetime
-depth_dir = 'F:/depths-old/*'
+depth_dir = 'W:/depths/*'
 
 
 def get_data(path):
@@ -65,22 +65,29 @@ def get_file_paths(dir_path, start_date, end_date):
     paths, stamps = [], []
     for file_path in list_of_files:
         timestamp = get_timestamp_from_path(file_path)
+        # print(start_date/1000,timestamp/1000, end_date/1000)
 
-        if start_date >= timestamp <= end_date:
-            paths.append(file_path)
-            stamps.append(timestamp)
-        elif timestamp > end_date:
-            return paths, stamps
+        paths.append(file_path)
+        stamps.append(timestamp)
 
 
-def get_rolling_window(start_date, end_date, interval, period):
-    # Because depth was snapshotted at 10s intervals
-    step = int(interval / 10000)
+        # if start_date >= timestamp <= end_date:
+        #     paths.append(file_path)
+        #     stamps.append(timestamp)
+        # elif timestamp > end_date:
+        #     return paths, stamps
+    return paths, stamps
 
-    # Need more data than window to compute first val
-    real_start_date = start_date - (interval*period)
 
-    paths, dates = get_file_paths(depth_dir, real_start_date, end_date)
+def get_rolling_window(start_date, end_date, interval):
+    step = 1
+
+    # Because depth was snapshotted at 10s intervals,
+    # we sample by step of 10 seconds * desired interval
+    if interval != 1:
+        step = int(interval / 10000)
+
+    paths, dates = get_file_paths(depth_dir, start_date, end_date)
 
     # Every step is an interval length
     window_paths, window_dates, curr_date_idx = [], [], 0
@@ -94,34 +101,39 @@ def get_rolling_window(start_date, end_date, interval, period):
     return window_paths, window_dates
 
 
-def get_prices(paths, pair, side):
-    """Check inside files from a list of paths and retrieve the prices for a pair.
+def get_prices(paths, side):
+    """Check inside files from a list of paths and retrieve the prices for all pairs.
 
     :param paths: Strings of paths
     :type paths: list
-    :param pair: Pair string
-    :type pair: str
     :param side: 'asks' or 'bids'
     :type side: str
     :returns: List of prices and dates tuples
     """
-    prices = []
+    prices = {}
+
     for path in paths:
         data = get_data(path)
 
-        if side == 'bids':  # Best bid
-            bid = sorted(list(data[pair]['bids'].keys()))[-1]
-            prices.append(bid)
-        elif side == 'asks':  # Best ask
-            ask = sorted(list(data[pair]['asks'].keys()))[0]
-            prices.append(ask)
-        else:
-            raise Exception('Side must be either "asks" or "bids".')
+        for pair in data.keys():
+
+            if pair not in prices:
+                prices[pair] = []
+
+            if side == 'bids':  # Best bid
+                bid = float(sorted(list(data[pair]['bids'].keys()))[-1])
+                prices[pair].append(bid)
+            elif side == 'asks':  # Best ask
+                ask = float(sorted(list(data[pair]['asks'].keys()))[0])
+                prices[pair].append(ask)
+
+            else:
+                raise Exception('Side must be either "asks" or "bids".')
 
     return prices
 
 
-def show_plot(pair, dates, prices, avg):
+def show_plot(pair, dates, prices, indicator):
     xs = matplotlib.dates.date2num(dates)
     hfmt = matplotlib.dates.DateFormatter('%m/%d %H:%M')
     fig = plt.figure()
@@ -133,7 +145,7 @@ def show_plot(pair, dates, prices, avg):
 
     ax2 = fig.add_subplot(1, 1, 1)
     ax2.xaxis.set_major_formatter(hfmt)
-    ax2.plot(xs, avg)
+    ax2.plot(xs, indicator)
 
     plt.show()
 
@@ -143,33 +155,47 @@ def get_moving_average(prices):
     output = talib.SMA(arr, timeperiod=35)
     return list(output)
 
-# def save_to_file(prices):
-#     outfile = open('prices.json', 'w')
-#     json.dump()
+
+def save_to_file(data):
+    outfile = open('prices.json', 'w')
+    json.dump(data, outfile)
+    outfile.close()
 
 
 def main():
-    start_date = 1548949201435
-    end_date = 1549016566397
-    interval = 60000
-    period = 20
-    pair = 'XRPBTC'
+    # start_date = 1548949201435
+    # end_date = 1549016566397
+    # interval = 60000
+    # period = 20
 
-    paths, dates = get_rolling_window(start_date, end_date, interval, period)
+    start_date = 1549105984696
+    end_date = 1549567124019
+    interval = 1
 
+    # Paths are required to get prices from files, dates get extracted too here
+    paths, dates = get_rolling_window(start_date, end_date, interval)
+
+    # Now we open files one by one
+    prices_obj = get_prices(paths, 'bids')
+
+    # Convert datetimes to date objects
     date_objs = [datetime.fromtimestamp(d/1000.0) for d in dates]
 
-    prices_str = get_prices(paths, pair, 'bids')
-    prices = [float(i) for i in prices_str]
+    prices_obj['datetime_ms'] = dates
+    save_to_file(prices_obj)
 
-    avg = get_moving_average(prices)
+    for tpl in prices_obj.items():
+        print(tpl[0], len(tpl[1]))
 
-    show_plot(pair, date_objs, prices, avg)
+    # prices = prices_obj['XRPBTC']
 
+    # avg = get_moving_average(prices)
+
+    # show_plot(pair, date_objs, prices, avg)
 
     # Print prices and dates
-    for i, d in enumerate(date_objs):
-        print(f'{d}  -  {prices[i]:.8f}')
+    # for i, d in enumerate(date_objs):
+    #     print(f'{d}  -  {prices[i]:.8f}')
 
 
 if __name__ == '__main__':
