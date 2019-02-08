@@ -101,6 +101,27 @@ def get_rolling_window(start_date, end_date, interval):
 
     return window_paths, window_dates
 
+# sortBids: function (bids) {
+#             let object = {}, count = 0;
+#             let sorted = Object.keys(cache).sort(function (a, b) {
+#                 return parseFloat(b) - parseFloat(a)
+#             });
+#             for (let price of sorted) {
+#                 object[price] = parseFloat(cache[price]);
+#             }
+#             return object;
+#         }
+
+
+# def sort_bids(bids):
+#     bids_dict = {}
+#     sorted_bids = sorted(bids.keys())
+#
+#     for price in sorted_bids:
+#         bids_dict[price] = float(bids[price])
+#
+#     return bids_dict
+
 
 def get_prices(paths, side):
     """Check inside files from a list of paths and retrieve the prices for all pairs.
@@ -122,14 +143,14 @@ def get_prices(paths, side):
                 prices[pair] = []
 
             if side == 'bids':  # Best bid
-                bid = float(list(data[pair]['bids'].keys())[-1])
+                bid = float(sorted(list(data[pair]['bids'].keys()))[0])
                 # if pair == 'BTCUSDT':
                 #     if float(bid) < 3000.0:
                 #         print(path)
                 #     print(bid)
                 prices[pair].append(bid)
             elif side == 'asks':  # Best ask
-                ask = float(list(data[pair]['asks'].keys())[0])
+                ask = float(sorted(list(data[pair]['asks'].keys()))[-1])
                 prices[pair].append(ask)
 
             else:
