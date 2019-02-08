@@ -8,6 +8,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates
 from datetime import datetime
+from csv_convert import to_csv
 depth_dir = 'W:/depths/*'
 
 
@@ -121,10 +122,14 @@ def get_prices(paths, side):
                 prices[pair] = []
 
             if side == 'bids':  # Best bid
-                bid = float(sorted(list(data[pair]['bids'].keys()))[-1])
+                bid = float(list(data[pair]['bids'].keys())[-1])
+                # if pair == 'BTCUSDT':
+                #     if float(bid) < 3000.0:
+                #         print(path)
+                #     print(bid)
                 prices[pair].append(bid)
             elif side == 'asks':  # Best ask
-                ask = float(sorted(list(data[pair]['asks'].keys()))[0])
+                ask = float(list(data[pair]['asks'].keys())[0])
                 prices[pair].append(ask)
 
             else:
@@ -157,7 +162,7 @@ def get_moving_average(prices):
 
 
 def save_to_file(data):
-    outfile = open('prices.json', 'w')
+    outfile = open('prices3.json', 'w')
     json.dump(data, outfile)
     outfile.close()
 
@@ -183,7 +188,7 @@ def main():
 
     prices_obj['datetime_ms'] = dates
     save_to_file(prices_obj)
-
+    to_csv()
     for tpl in prices_obj.items():
         print(tpl[0], len(tpl[1]))
 
